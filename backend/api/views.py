@@ -5,12 +5,9 @@ from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from django.shortcuts import get_object_or_404, redirect
-from recipes.models import Recipe
-from django.http import FileResponse, Http404
 from django.db.models import F, Sum
 from django.utils import timezone
 from django.http import HttpResponse
-from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 
 from django_filters.rest_framework import DjangoFilterBackend
 
