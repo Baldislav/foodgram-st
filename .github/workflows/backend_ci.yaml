@@ -70,10 +70,6 @@ jobs:
           context: ./backend/
           push: true
           tags: baldislav/foodgram_backend:latest
-
-  build_and_push_frontend:
-          tags: baldislav/foodgram_backend:latest
-
   build_and_push_frontend:
     runs-on: ubuntu-latest
     needs: tests
@@ -89,10 +85,6 @@ jobs:
           context: ./frontend/
           push: true
           tags: baldislav/foodgram_frontend:latest
-
-  build_and_push_gateway:
-          tags: baldislav/foodgram_frontend:latest
-
   build_and_push_gateway:
     runs-on: ubuntu-latest
     needs: tests
@@ -108,10 +100,6 @@ jobs:
           context: ./infra/
           push: true
           tags: baldislav/foodgram_gateway:latest
-
-  send_telegram_message:
-          tags: baldislav/foodgram_gateway:latest
-
   send_telegram_message:
     runs-on: ubuntu-latest
     needs:
