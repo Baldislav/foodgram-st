@@ -1,5 +1,8 @@
+# Сторонние библиотеки
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+
+# Импорты из проекта
 from .models import (
     Ingredient,
     Recipe,
