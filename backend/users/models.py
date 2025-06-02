@@ -4,20 +4,19 @@ from django.db import models
 
 class User(AbstractUser):
     email = models.EmailField(
-        'адрес электронной почты',
+        verbose_name='адрес электронной почты',
         unique=True,
-        max_length=254
+        max_length=254,
     )
-
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
-
     avatar = models.ImageField(
-        'аватар',
+        verbose_name='аватар',
         upload_to='users/avatars/',
         blank=True,
         null=True,
     )
+
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -33,17 +32,17 @@ class Follow(models.Model):
         User,
         on_delete=models.CASCADE,
         related_name='follower',
-        verbose_name='Подписчик'
+        verbose_name='Подписчик',
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='following',
-        verbose_name='Автор'
+        verbose_name='Автор',
     )
     created_at = models.DateTimeField(
-        'Дата создания подписки',
-        auto_now_add=True
+        verbose_name='Дата создания подписки',
+        auto_now_add=True,
     )
 
     class Meta:
@@ -52,12 +51,12 @@ class Follow(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'author'],
-                name='unique_user_author_follow'
+                name='unique_user_author_follow',
             ),
             models.CheckConstraint(
                 check=~models.Q(user=models.F('author')),
-                name='prevent_self_follow'
-            )
+                name='prevent_self_follow',
+            ),
         ]
 
     def __str__(self):
