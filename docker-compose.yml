@@ -1,3 +1,5 @@
+version: '3.8'
+
 volumes:
   postgres_data:
   static_volume:
@@ -12,7 +14,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
-      - ./.env
+      - .env
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -26,8 +28,7 @@ services:
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
-    image: maximflunn/foodgram-maxim-filatov-backend:latest
+    image: baldislav/foodgram_backend:latest
     container_name: foodgram_backend
     restart: always
     volumes:
@@ -39,21 +40,25 @@ services:
       db:
         condition: service_healthy
     env_file:
-      - ./.env
+      - .env
     expose:
       - "8000"
 
   frontend:
-    image: maximflunn/foodgram-maxim-filatov-frontend:latest
-    container_name: foodgram-front
     build:
       context: ./frontend
+    image: baldislav/foodgram_frontend:latest
+    container_name: foodgram_frontend
+    restart: always
     volumes:
       - frontend_build:/app/build
 
   nginx:
-    container_name: foodgram-proxy
-    image: nginx:1.25-alpine
+    build:
+      context: ./infra
+    image: baldislav/foodgram_gateway:latest
+    container_name: foodgram_nginx
+    restart: always
     ports:
       - "80:80"
     volumes:

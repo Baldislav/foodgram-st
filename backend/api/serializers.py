@@ -2,10 +2,9 @@ from djoser.serializers import (
     UserCreateSerializer as DjoserUserCreateSerializer,
     UserSerializer as DjoserUserSerializer,
 )
+
+from drf_extra_fields.fields import Base64ImageField
 from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-import base64
-import six
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 
@@ -13,23 +12,6 @@ from recipes.models import Ingredient, Recipe, IngredientInRecipe
 from users.models import Follow
 
 UserModel = get_user_model()
-
-
-class Base64ImageField(serializers.ImageField):
-    def to_internal_value(self, data):
-        if isinstance(data, six.string_types):
-            if "data:" in data and ";base64," in data:
-                _, base64_data = data.split(";base64,")
-            else:
-                base64_data = data
-            try:
-                decoded_content = base64.b64decode(base64_data)
-            except TypeError:
-                self.fail("invalid_image")
-            file_name = "uploaded_image.png"
-            data = ContentFile(decoded_content, name=file_name)
-        return super().to_internal_value(data)
-
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
     first_name = serializers.CharField(required=True, max_length=150)
@@ -129,7 +111,8 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         data = super().validate(data)
-        request_method = self.context["request"].method
+        request = self.context["request"]
+        request_method = request.method
 
         if request_method == "PATCH":
             required_fields = {"ingredients", "name", "text", "cooking_time"}
@@ -138,6 +121,7 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     field: ["This field is required for update."] for field in missing_fields
                 })
+
         else:
             # POST or PUT
             if "image" not in self.initial_data and not self.instance:
@@ -146,7 +130,14 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({"image": ["This field is required for PUT."]})
             if "ingredients" not in self.initial_data:
                 raise serializers.ValidationError({"ingredients": ["This field is required."]})
+
+        # Проверка на пустое значение
+        image_value = self.initial_data.get("image", None)
+        if image_value in ("", None):
+            raise serializers.ValidationError({"image": ["Image cannot be empty."]})
+
         return data
+
 
     def to_representation(self, recipe_instance):
         ret = super().to_representation(recipe_instance)

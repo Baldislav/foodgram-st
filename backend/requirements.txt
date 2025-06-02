@@ -9,3 +9,4 @@ gunicorn==22.0.0
 django-filter==24.2
 dj_database_url==2.3.0
 six==1.16.0
+drf_extra_fields==3.7.0

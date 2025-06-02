@@ -1,18 +1,14 @@
 import django_filters
-from recipes.models import (
-    Recipe,
-    Ingredient,
-)
-
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import FilterSet, CharFilter
+
+from recipes.models import Recipe, Ingredient
+
 
 User = get_user_model()
 
 
 class RecipeFilter(django_filters.FilterSet):
-    author = django_filters.ModelChoiceFilter(queryset=User.objects.all())
-
     class Meta:
         model = Recipe
         fields = ["author"]
