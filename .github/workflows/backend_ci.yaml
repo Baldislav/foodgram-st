@@ -1,4 +1,5 @@
 name: CI/CD for Foodgram
+name: CI/CD for Foodgram
 
 on:
   push:
@@ -22,7 +23,19 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -50,15 +63,38 @@ jobs:
           python backend/manage.py test
 
   build_and_push_backend:
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip 
+          pip install ruff==0.8.0
+          pip install -r ./backend/requirements.txt
+
+      - name: Lint and test
+        env:
+          SECRET_KEY: test-secret-key
+          POSTGRES_USER: django
+          POSTGRES_PASSWORD: django_password
+          POSTGRES_DB: django_db
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+        run: |
+          python -m ruff check backend/
+          python backend/manage.py test
+
+  build_and_push_backend:
     runs-on: ubuntu-latest
     needs: tests
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v5
       - uses: docker/build-push-action@v5
         with:
           context: ./backend/
@@ -66,15 +102,23 @@ jobs:
           tags: baldislav/foodgram_backend:latest
 
   build_and_push_frontend:
+          tags: baldislav/foodgram_backend:latest
+
+  build_and_push_frontend:
     runs-on: ubuntu-latest
     needs: tests
+    needs: tests
     steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
+      - uses: docker/build-push-action@v5
       - uses: docker/build-push-action@v5
         with:
           context: ./frontend/
@@ -82,9 +126,16 @@ jobs:
           tags: baldislav/foodgram_frontend:latest
 
   build_and_push_gateway:
+          tags: baldislav/foodgram_frontend:latest
+
+  build_and_push_gateway:
     runs-on: ubuntu-latest
     needs: tests
+    needs: tests
     steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
@@ -92,14 +143,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
+          context: ./infra/
           context: ./infra/
           push: true
           tags: baldislav/foodgram_gateway:latest
 
   send_telegram_message:
+          tags: baldislav/foodgram_gateway:latest
+
+  send_telegram_message:
     runs-on: ubuntu-latest
     needs:
+      - build_and_push_backend
+      - build_and_push_frontend
+      - build_and_push_gateway
       - build_and_push_backend
       - build_and_push_frontend
       - build_and_push_gateway
