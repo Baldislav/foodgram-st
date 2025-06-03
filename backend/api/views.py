@@ -1,38 +1,37 @@
-from rest_framework import viewsets, filters, status
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.decorators import api_view
-from django.shortcuts import get_object_or_404, redirect
+from django.contrib.auth import get_user_model
 from django.db.models import F, Sum
-from django.utils import timezone
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.utils import timezone
 
 from django_filters.rest_framework import DjangoFilterBackend
 
+from rest_framework import filters, status, viewsets
+from rest_framework.decorators import action, api_view
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
 from recipes.models import (
-    Ingredient,
-    Recipe,
-    IngredientInRecipe,
     Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
     ShoppingCart,
 )
 
-from django.contrib.auth import get_user_model
 from users.models import Follow
 
+from .filters import IngredientFilter
+from .pagination import FoodgramPageNumberPagination
+from .permissions import IsAuthorOrAdminOrReadOnly
 from .serializers import (
+    AvatarResponseSerializer as SetAvatarResponseSerializer,
+    AvatarUploadSerializer as SetAvatarSerializer,
     IngredientSerializer,
     RecipeDetailSerializer,
     RecipeShortSerializer,
     UserWithRecipesSerializer,
-    AvatarUploadSerializer as SetAvatarSerializer,
-    AvatarResponseSerializer as SetAvatarResponseSerializer,
 )
-
-from .permissions import IsAuthorOrAdminOrReadOnly
-from .filters import IngredientFilter
-from .pagination import FoodgramPageNumberPagination
 
 User = get_user_model()
 
@@ -225,6 +224,7 @@ class AvatarViewSet(viewsets.ViewSet):
         if user.avatar:
             user.avatar.delete(save=True)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
 
 class UserSubscriptionViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
