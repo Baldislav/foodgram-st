@@ -201,33 +201,28 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response({"short-link": absolute_short_link_url}, status=status.HTTP_200_OK)
 
 
-class AvatarUploadView(APIView):
+class AvatarViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
-
-    def put(self, request, *args, **kwargs):
-        user = self.get_object()
+    @action(detail=False, methods=["put"])
+    def avatar(self, request):
+        user = request.user
         serializer = SetAvatarSerializer(data=request.data, context={'request': request})
         if serializer.is_valid():
-            # Удаляем старый аватар, если есть
             if user.avatar:
                 user.avatar.delete(save=False)
-
-            # Сохраняем новый аватар
             user.avatar = serializer.validated_data['avatar']
             user.save()
 
             avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
-
             response_serializer = SetAvatarResponseSerializer({"avatar": avatar_url})
             return Response(response_serializer.data, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, *args, **kwargs):
-        user = self.get_object()
+    @avatar.mapping.delete
+    def delete_avatar(self, request):
+        user = request.user
         if user.avatar:
             user.avatar.delete(save=True)
         return Response(status=status.HTTP_204_NO_CONTENT)

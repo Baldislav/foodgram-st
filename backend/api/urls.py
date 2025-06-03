@@ -5,7 +5,7 @@ from .views import (
     IngredientViewSet,
     RecipeViewSet,
     UserSubscriptionViewSet,
-    AvatarUploadView,
+    AvatarViewSet,
 )
 
 app_name = "api_v1"
@@ -14,8 +14,8 @@ api_router = DefaultRouter()
 api_router.register(r"ingredients", IngredientViewSet, basename="ingredient")
 api_router.register(r"recipes", RecipeViewSet, basename="recipe")
 api_router.register(r"users", UserSubscriptionViewSet, basename="user-subscription")
+api_router.register(r"users/me", AvatarViewSet, basename="user-avatar")
 
 urlpatterns = [
     path("", include(api_router.urls)),
-    path("users/me/avatar/", AvatarUploadView.as_view(), name="user_avatar"),
 ]
