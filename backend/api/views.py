@@ -21,7 +21,7 @@ from recipes.models import (
 
 from users.models import Follow
 
-from .filters import IngredientFilter
+from .filters import IngredientFilter, RecipeFilter
 from .pagination import FoodgramPageNumberPagination
 from .permissions import IsAuthorOrAdminOrReadOnly
 from .serializers import (
@@ -53,37 +53,18 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorOrAdminOrReadOnly]
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter,
-    ]
-    filterset_fields = ["author"]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = RecipeFilter  # <= используем наш фильтр
     search_fields = ["name"]
     ordering_fields = ["pub_date", "name"]
     ordering = ["-pub_date"]
 
     def get_queryset(self):
-        queryset = Recipe.objects.select_related("author").prefetch_related(
+        return Recipe.objects.select_related("author").prefetch_related(
             "ingredient_amounts__ingredient",
             "favorited_by",
             "in_shopping_carts_of",
         )
-
-        user = self.request.user
-        query_params = self.request.query_params
-        is_favorited_param = query_params.get("is_favorited")
-        if is_favorited_param in ["true", "1"] and user.is_authenticated:
-            queryset = queryset.filter(favorited_by__user=user)
-        elif is_favorited_param in ["false", "0"] and user.is_authenticated:
-            queryset = queryset.exclude(favorited_by__user=user)
-
-        is_in_shopping_cart_param = query_params.get("is_in_shopping_cart")
-        if is_in_shopping_cart_param in ["true", "1"] and user.is_authenticated:
-            queryset = queryset.filter(in_shopping_carts_of__user=user)
-        elif is_in_shopping_cart_param in ["false", "0"] and user.is_authenticated:
-            queryset = queryset.exclude(in_shopping_carts_of__user=user)
-        return queryset
 
     def get_serializer_class(self):
         if self.action in ['favorite', 'shopping_cart']:
