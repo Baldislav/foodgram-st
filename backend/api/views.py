@@ -210,17 +210,14 @@ class AvatarViewSet(viewsets.ViewSet):
 class UserSubscriptionViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = FoodgramPageNumberPagination
-
-    def get_serializer_class(self):
-        return UserWithRecipesSerializer
+    serializer_class = UserWithRecipesSerializer
 
     @action(detail=False, methods=["get"], url_path="subscriptions")
     def get_user_subscriptions(self, request):
         user = request.user
-        subscribed_author_ids = Follow.objects.filter(user=user).values_list("author_id", flat=True)
 
         authors_queryset = (
-            User.objects.filter(pk__in=subscribed_author_ids)
+            User.objects.filter(follower__user=user)
             .prefetch_related("recipes")
             .order_by("username")
         )
@@ -228,40 +225,38 @@ class UserSubscriptionViewSet(viewsets.ViewSet):
         paginator = self.pagination_class()
         page = paginator.paginate_queryset(authors_queryset, request, view=self)
 
-        serializer_context = {"request": request}
-        serializer = self.get_serializer_class()(page, many=True, context=serializer_context)
+        serializer = self.serializer_class(page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
     @action(detail=True, methods=["post", "delete"], url_path="subscribe")
     def manage_subscription(self, request, pk=None):
-        author_to_subscribe = get_object_or_404(User, pk=pk)
-        current_user = request.user
+        author = get_object_or_404(User, pk=pk)
+        user = request.user
 
-        if current_user == author_to_subscribe:
+        if user == author:
             return Response(
                 {"errors": "Нельзя подписаться на самого себя."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if request.method == "POST":
-            follow_instance, created = Follow.objects.get_or_create(user=current_user, author=author_to_subscribe)
+            follow, created = Follow.objects.get_or_create(user=user, author=author)
             if not created:
                 return Response(
                     {"errors": "Вы уже подписаны на этого пользователя."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            serializer_context = {"request": request}
-            author_instance = User.objects.prefetch_related("recipes").get(pk=author_to_subscribe.pk)
-            serializer = self.get_serializer_class()(author_instance, context=serializer_context)
+            serializer = self.serializer_class(author, context={"request": request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         elif request.method == "DELETE":
-            deleted_count, _ = Follow.objects.filter(user=current_user, author=author_to_subscribe).delete()
-            if deleted_count == 0:
+            deleted_count, _ = Follow.objects.filter(user=user, author=author).delete()
+            if not deleted_count:
                 return Response(
                     {"errors": "Вы не были подписаны на этого пользователя."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             return Response(status=status.HTTP_204_NO_CONTENT)
 
-        return Response(status=status.HTTP_405)
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
