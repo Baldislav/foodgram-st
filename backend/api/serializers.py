@@ -114,27 +114,31 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         request_method = request.method
 
+        required_fields = {"ingredients", "name", "text", "cooking_time", "image"}
+
         if request_method == "PATCH":
-            required_fields = {"ingredients", "name", "text", "cooking_time"}
             missing_fields = required_fields - set(self.initial_data.keys())
             if missing_fields:
                 raise serializers.ValidationError({
-                    field: ["This field is required for update."] for field in missing_fields
+                    field: ["Это поле обязательно для обновления."] for field in missing_fields
                 })
 
-        else:
-            # POST or PUT
-            if "image" not in self.initial_data and not self.instance:
-                raise serializers.ValidationError({"image": ["This field is required."]})
-            if request_method == "PUT" and "image" not in self.initial_data:
-                raise serializers.ValidationError({"image": ["This field is required for PUT."]})
-            if "ingredients" not in self.initial_data:
-                raise serializers.ValidationError({"ingredients": ["This field is required."]})
+        else:  # POST или PUT
+            missing_fields = required_fields - set(self.initial_data.keys())
+            if missing_fields:
+                raise serializers.ValidationError({
+                    field: ["Это поле обязательно."] for field in missing_fields
+                })
 
-        # Проверка на пустое значение
+        # Дополнительная проверка, что ingredients — не пустой список
+        ingredients = self.initial_data.get("ingredients")
+        if ingredients is None or (isinstance(ingredients, list) and len(ingredients) == 0):
+            raise serializers.ValidationError({"ingredients": ["Пожалуйста, укажите ингредиенты."]})
+
+        # Проверка, что image не пустое
         image_value = self.initial_data.get("image", None)
         if image_value in ("", None):
-            raise serializers.ValidationError({"image": ["Image cannot be empty."]})
+            raise serializers.ValidationError({"image": ["Изображение не может быть пустым."]})
 
         return data
 
@@ -180,15 +184,15 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop("ingredients", None)
+        ingredients_data = validated_data.pop("ingredients")
+        # выше проверено, что они есть
         instance.name = validated_data.get("name", instance.name)
         instance.text = validated_data.get("text", instance.text)
         instance.cooking_time = validated_data.get("cooking_time", instance.cooking_time)
         instance.image = validated_data.get("image", instance.image)
         instance.save()
 
-        if ingredients_data is not None:
-            self._update_ingredients(instance, ingredients_data)
+        self._update_ingredients(instance, ingredients_data)
         return instance
 
     def validate_ingredients(self, ingredients):
