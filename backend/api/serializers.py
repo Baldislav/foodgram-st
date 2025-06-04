@@ -8,9 +8,11 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 
+from .constants import ERROR_MESSAGES
 from recipes.models import Ingredient, Recipe, IngredientInRecipe
 
 UserModel = get_user_model()
+
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
     first_name = serializers.CharField(required=True, max_length=150)
@@ -46,7 +48,9 @@ class UserDetailSerializer(DjoserUserSerializer):
 
     def to_representation(self, user_instance):
         if not user_instance or getattr(user_instance, "is_anonymous", True):
-            raise NotAuthenticated("Authentication credentials were not provided.")
+            raise NotAuthenticated(
+                "Authentication credentials were not provided."
+            )
         return super().to_representation(user_instance)
 
     def get_is_subscribed(self, obj):
@@ -71,14 +75,18 @@ class IngredientAmountSerializer(serializers.Serializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField(
         min_value=1,
-        error_messages={"min_value": "Количество должно быть не меньше 1."},
+        error_messages={
+            "min_value": ERROR_MESSAGES["ingredient_min_value"]
+        },
     )
 
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source="ingredient.id")
     name = serializers.ReadOnlyField(source="ingredient.name")
-    measurement_unit = serializers.ReadOnlyField(source="ingredient.measurement_unit")
+    measurement_unit = serializers.ReadOnlyField(
+        source="ingredient.measurement_unit"
+    )
 
     class Meta:
         model = IngredientInRecipe
@@ -109,46 +117,59 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
             "text",
             "cooking_time",
         )
-        read_only_fields = ("id", "author", "is_favorited", "is_in_shopping_cart")
+        read_only_fields = (
+            "id",
+            "author",
+            "is_favorited",
+            "is_in_shopping_cart",
+        )
 
     def validate(self, data):
         data = super().validate(data)
         request = self.context["request"]
         request_method = request.method
 
-        required_fields = {"ingredients", "name", "text", "cooking_time", "image"}
+        required_fields = {
+            "ingredients",
+            "name",
+            "text",
+            "cooking_time",
+            "image",
+        }
 
-        if request_method == "PATCH":
-            missing_fields = required_fields - set(self.initial_data.keys())
-            if missing_fields:
-                raise serializers.ValidationError({
-                    field: ["Это поле обязательно для обновления."] for field in missing_fields
-                })
+        missing_fields = required_fields - set(self.initial_data.keys())
+        if missing_fields:
+            if request_method == "PATCH":
+                error_msg = ERROR_MESSAGES["field_required_patch"]
+            else:
+                error_msg = ERROR_MESSAGES["field_required_post_put"]
 
-        else:  # POST или PUT
-            missing_fields = required_fields - set(self.initial_data.keys())
-            if missing_fields:
-                raise serializers.ValidationError({
-                    field: ["Это поле обязательно."] for field in missing_fields
-                })
+            raise serializers.ValidationError(
+                {field: [error_msg] for field in missing_fields}
+            )
 
         # Дополнительная проверка, что ingredients — не пустой список
         ingredients = self.initial_data.get("ingredients")
         if ingredients is None or (isinstance(ingredients, list) and len(ingredients) == 0):
-            raise serializers.ValidationError({"ingredients": ["Пожалуйста, укажите ингредиенты."]})
+            raise serializers.ValidationError(
+                {"ingredients": [ERROR_MESSAGES["ingredient_required"]]}
+            )
 
         # Проверка, что image не пустое
         image_value = self.initial_data.get("image", None)
         if image_value in ("", None):
-            raise serializers.ValidationError({"image": ["Изображение не может быть пустым."]})
+            raise serializers.ValidationError(
+                {"image": [ERROR_MESSAGES["image_empty"]]}
+            )
 
         return data
-
 
     def to_representation(self, recipe_instance):
         ret = super().to_representation(recipe_instance)
         ret["ingredients"] = IngredientInRecipeSerializer(
-            recipe_instance.ingredient_amounts.all(), many=True, context=self.context
+            recipe_instance.ingredient_amounts.all(),
+            many=True,
+            context=self.context,
         ).data
         ret.pop("detailed_ingredients", None)
         return ret
@@ -199,10 +220,14 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, ingredients):
         if not ingredients:
-            raise serializers.ValidationError("Пожалуйста, укажите ингредиенты.")
+            raise serializers.ValidationError(
+                "Пожалуйста, укажите ингредиенты."
+            )
         ingredient_ids = [item["id"].id for item in ingredients]
         if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError("Ингредиенты не должны повторяться.")
+            raise serializers.ValidationError(
+                "Ингредиенты не должны повторяться."
+            )
         return ingredients
 
 
@@ -215,15 +240,20 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 class UserWithRecipesSerializer(UserDetailSerializer):
     recipes = RecipeShortSerializer(many=True, read_only=True)
-    recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
+    recipes_count = serializers.IntegerField(source="recipes.count", read_only=True)
 
     class Meta(UserDetailSerializer.Meta):
         fields = UserDetailSerializer.Meta.fields + ("recipes", "recipes_count")
-        read_only_fields = UserDetailSerializer.Meta.read_only_fields + ("recipes", "recipes_count")
+        read_only_fields = UserDetailSerializer.Meta.read_only_fields + (
+            "recipes",
+            "recipes_count",
+        )
 
     def to_representation(self, user_instance):
         data = super().to_representation(user_instance)
-        recipes_limit_param = self.context.get("request").query_params.get("recipes_limit")
+        recipes_limit_param = self.context.get("request").query_params.get(
+            "recipes_limit"
+        )
         if recipes_limit_param is not None:
             try:
                 limit = int(recipes_limit_param)
