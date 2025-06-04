@@ -9,7 +9,6 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 
 from recipes.models import Ingredient, Recipe, IngredientInRecipe
-from users.models import Follow
 
 UserModel = get_user_model()
 
