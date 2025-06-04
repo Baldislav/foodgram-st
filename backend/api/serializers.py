@@ -50,12 +50,15 @@ class UserDetailSerializer(DjoserUserSerializer):
             raise NotAuthenticated("Authentication credentials were not provided.")
         return super().to_representation(user_instance)
 
-    def get_is_subscribed(self, author_obj):
+    def get_is_subscribed(self, obj):
         request = self.context.get("request")
         user = getattr(request, "user", None)
-        if not user or user.is_anonymous:
+
+        if not user or not user.is_authenticated:
             return False
-        return Follow.objects.filter(user=user, author=author_obj).exists()
+
+        # Используем related_name='follower', можно без запроса в БД:
+        return obj.following.filter(user=user).exists()
 
 
 class IngredientSerializer(serializers.ModelSerializer):
