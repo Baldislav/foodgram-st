@@ -60,7 +60,7 @@ class UserDetailSerializer(DjoserUserSerializer):
         if not user or not user.is_authenticated:
             return False
 
-        # Используем related_name='follower', можно без запроса в БД:
+        #related_name='follower', можно без запроса в БД:
         return obj.following.filter(user=user).exists()
 
 
@@ -148,7 +148,6 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
                 {field: [error_msg] for field in missing_fields}
             )
 
-        # Дополнительная проверка, что ingredients — не пустой список
         ingredients = self.initial_data.get("ingredients")
         if ingredients is None or (isinstance(ingredients, list) and len(ingredients) == 0):
             raise serializers.ValidationError(

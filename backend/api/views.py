@@ -54,7 +54,7 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipeViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthorOrAdminOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_class = RecipeFilter  # <= используем наш фильтр
+    filterset_class = RecipeFilter
     search_fields = ["name"]
     ordering_fields = ["pub_date", "name"]
     ordering = ["-pub_date"]
