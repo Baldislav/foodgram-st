@@ -26,7 +26,6 @@ class UserAdmin(admin.ModelAdmin):
 class IngredientAdmin(admin.ModelAdmin):
     list_display = ("name", "measurement_unit")
     search_fields = ("name",)
-    # Фильтрация по measurement_unit можно оставить или убрать — не сказано в требованиях явно
     list_filter = ("measurement_unit",)
 
 
