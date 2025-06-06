@@ -59,7 +59,6 @@ class UserDetailSerializer(DjoserUserSerializer):
         if not user or not user.is_authenticated:
             return False
 
-        #related_name='follower', можно без запроса в БД:
         return obj.following.filter(user=user).exists()
 
 
@@ -147,13 +146,6 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
                 {field: [error_msg] for field in missing_fields}
             )
 
-        ingredients = self.initial_data.get("ingredients")
-        if ingredients is None or (isinstance(ingredients, list) and len(ingredients) == 0):
-            raise serializers.ValidationError(
-                {"ingredients": [ERROR_MESSAGES["ingredient_required"]]}
-            )
-
-        # Проверка, что image не пустое
         image_value = self.initial_data.get("image", None)
         if image_value in ("", None):
             raise serializers.ValidationError(
@@ -212,14 +204,38 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, ingredients):
         if not ingredients:
-            raise serializers.ValidationError(
-                "Пожалуйста, укажите ингредиенты."
-            )
-        ingredient_ids = [item["id"].id for item in ingredients]
+            raise serializers.ValidationError("Пожалуйста, укажите ингредиенты.")
+
+        ingredient_ids = []
+        for item in ingredients:
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(
+                    "Каждый ингредиент должен быть объектом с 'id' и 'amount'."
+                )
+
+            ingredient = item.get("id")
+            amount = item.get("amount")
+
+            if ingredient is None:
+                raise serializers.ValidationError(
+                    "У каждого ингредиента должно быть поле 'id'."
+                )
+            if amount is None:
+                raise serializers.ValidationError(
+                    "У каждого ингредиента должно быть поле 'amount'."
+                )
+
+            if not isinstance(amount, int) or amount < MIN_INGREDIENT_AMOUNT:
+                raise serializers.ValidationError(
+                    f"Количество ингредиента должно быть целым числом не меньше {MIN_INGREDIENT_AMOUNT}."
+                )
+
+            ingredient_id = getattr(ingredient, "id", ingredient)
+            ingredient_ids.append(ingredient_id)
+
         if len(ingredient_ids) != len(set(ingredient_ids)):
-            raise serializers.ValidationError(
-                "Ингредиенты не должны повторяться."
-            )
+            raise serializers.ValidationError("Ингредиенты не должны повторяться.")
+
         return ingredients
 
 
