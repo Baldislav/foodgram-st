@@ -205,15 +205,9 @@ class RecipeDetailSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop("ingredients", None)
-        # Обновляем стандартные поля через super
+        ingredients_data = validated_data.pop("ingredients")
         instance = super().update(instance, validated_data)
-
-        # Ингредиенты обязательны, проверка есть на уровне валидации,
-        # поэтому просто обновляем их
-        if ingredients_data is not None:
-            self._update_ingredients(instance, ingredients_data)
-
+        self._update_ingredients(instance, ingredients_data)
         return instance
 
     def validate_ingredients(self, ingredients):
