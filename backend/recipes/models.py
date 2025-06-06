@@ -35,14 +35,25 @@ from .constants import (
     SHOPPING_CART_RECIPE_FIELD,
     SHOPPING_CART_UNIQUE_CONSTRAINT_NAME,
     SHOPPING_CART_STR_FORMAT,
+    INGREDIENT_NAME_MAX_LENGTH,
+    INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH,
+    RECIPE_NAME_MAX_LENGTH,
+    RECIPE_COOKING_TIME_MIN_VALUE,
+    INGREDIENT_AMOUNT_MIN_VALUE,
 )
 
 User = get_user_model()
 
 
 class Ingredient(models.Model):
-    name = models.CharField(INGREDIENT_NAME_FIELD, max_length=200)
-    measurement_unit = models.CharField(INGREDIENT_MEASUREMENT_UNIT_FIELD, max_length=200)
+    name = models.CharField(
+        INGREDIENT_NAME_FIELD,
+        max_length=INGREDIENT_NAME_MAX_LENGTH
+    )
+    measurement_unit = models.CharField(
+        INGREDIENT_MEASUREMENT_UNIT_FIELD,
+        max_length=INGREDIENT_MEASUREMENT_UNIT_MAX_LENGTH
+    )
 
     class Meta:
         verbose_name = INGREDIENT_VERBOSE_NAME
@@ -66,8 +77,14 @@ class Recipe(models.Model):
         related_name="recipes",
         verbose_name=RECIPE_AUTHOR_FIELD,
     )
-    name = models.CharField(RECIPE_NAME_FIELD, max_length=200)
-    image = models.ImageField(RECIPE_IMAGE_FIELD, upload_to="recipes/images/")
+    name = models.CharField(
+        RECIPE_NAME_FIELD,
+        max_length=RECIPE_NAME_MAX_LENGTH
+    )
+    image = models.ImageField(
+        RECIPE_IMAGE_FIELD,
+        upload_to="recipes/images/"
+    )
     text = models.TextField(RECIPE_TEXT_FIELD)
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -76,7 +93,8 @@ class Recipe(models.Model):
         verbose_name=RECIPE_INGREDIENTS_FIELD,
     )
     cooking_time = models.PositiveSmallIntegerField(
-        RECIPE_COOKING_TIME_FIELD, validators=[MinValueValidator(1)]
+        RECIPE_COOKING_TIME_FIELD,
+        validators=[MinValueValidator(RECIPE_COOKING_TIME_MIN_VALUE)]
     )
     pub_date = models.DateTimeField(RECIPE_PUB_DATE_FIELD, auto_now_add=True)
 
@@ -103,7 +121,8 @@ class IngredientInRecipe(models.Model):
         verbose_name=INGREDIENT_IN_RECIPE_INGREDIENT_FIELD,
     )
     amount = models.PositiveSmallIntegerField(
-        INGREDIENT_IN_RECIPE_AMOUNT_FIELD, validators=[MinValueValidator(1)]
+        INGREDIENT_IN_RECIPE_AMOUNT_FIELD,
+        validators=[MinValueValidator(INGREDIENT_AMOUNT_MIN_VALUE)]
     )
 
     class Meta:
