@@ -247,7 +247,7 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 
 
 class UserWithRecipesSerializer(UserDetailSerializer):
-    recipes = RecipeShortSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.IntegerField(source="recipes.count", read_only=True)
 
     class Meta(UserDetailSerializer.Meta):
@@ -257,21 +257,19 @@ class UserWithRecipesSerializer(UserDetailSerializer):
             "recipes_count",
         )
 
-    def to_representation(self, user_instance):
-        data = super().to_representation(user_instance)
-        recipes_limit_param = self.context.get("request").query_params.get(
-            "recipes_limit"
-        )
-        if recipes_limit_param is not None:
+    def get_recipes(self, obj):
+        request = self.context.get("request")
+        recipes_limit = None
+        if request:
             try:
-                limit = int(recipes_limit_param)
-                recipes_qs = user_instance.recipes.all()[:limit]
-            except ValueError:
-                recipes_qs = user_instance.recipes.all()
-        else:
-            recipes_qs = user_instance.recipes.all()
-        data["recipes"] = RecipeShortSerializer(recipes_qs, many=True).data
-        return data
+                recipes_limit = int(request.query_params.get("recipes_limit"))
+            except (TypeError, ValueError):
+                pass
+
+        recipes_qs = obj.recipes.all()
+        if recipes_limit is not None:
+            recipes_qs = recipes_qs[:recipes_limit]
+        return RecipeShortSerializer(recipes_qs, many=True, context=self.context).data
 
 
 class AvatarUploadSerializer(serializers.Serializer):
