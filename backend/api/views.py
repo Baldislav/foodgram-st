@@ -53,11 +53,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
     ordering_fields = ["pub_date", "name"]
     ordering = ["-pub_date"]
 
-    def get_queryset(self):
-        return Recipe.objects.select_related("author").prefetch_related(
-            "ingredient_amounts__ingredient",
-            "favorited_by",
-            "in_shopping_carts_of",
+    queryset = Recipe.objects.select_related("author").prefetch_related(
+        "ingredient_amounts__ingredient",
+        "favorited_by",
+        "in_shopping_carts_of",
         )
 
     def get_serializer_class(self):
