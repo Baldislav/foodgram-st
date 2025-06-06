@@ -3,24 +3,13 @@ from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-
 from django_filters.rest_framework import DjangoFilterBackend
-
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    IngredientInRecipe,
-    Recipe,
-    ShoppingCart,
-)
-
 from users.models import Follow
-
 from .filters import IngredientFilter, RecipeFilter
 from .pagination import FoodgramPageNumberPagination
 from .permissions import IsAuthorOrAdminOrReadOnly
@@ -31,6 +20,13 @@ from .serializers import (
     RecipeDetailSerializer,
     RecipeShortSerializer,
     UserWithRecipesSerializer,
+)
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
 )
 
 User = get_user_model()
