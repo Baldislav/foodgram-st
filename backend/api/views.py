@@ -216,6 +216,27 @@ class UserSubscriptionViewSet(viewsets.ViewSet):
 
         serializer = self.serializer_class(page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
+    
+    @action(detail=False, methods=["put", "delete"], url_path="me/avatar")
+    def avatar(self, request):
+        user = request.user
+        if request.method == "PUT":
+            serializer = SetAvatarSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                if user.avatar:
+                    user.avatar.delete(save=False)
+                user.avatar = serializer.validated_data['avatar']
+                user.save()
+
+                avatar_url = request.build_absolute_uri(user.avatar.url) if user.avatar else None
+                response_serializer = SetAvatarResponseSerializer({"avatar": avatar_url})
+                return Response(response_serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        elif request.method == "DELETE":
+            if user.avatar:
+                user.avatar.delete(save=True)
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post", "delete"], url_path="subscribe")
     def manage_subscription(self, request, pk=None):
