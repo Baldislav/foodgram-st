@@ -9,12 +9,6 @@ urlpatterns = [
         "s/<int:pk>/", recipe_short_redirect_view, name="recipe-short-redirect"
     ),
     path(
-        "api/auth/", include("djoser.urls.authtoken")
-    ),
-    path(
         "api/", include("api.urls")
-    ),
-    path(
-        "api/", include("djoser.urls")
     ),
 ]

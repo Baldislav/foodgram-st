@@ -18,4 +18,6 @@ api_router.register(r"users/me", AvatarViewSet, basename="user-avatar")
 
 urlpatterns = [
     path("", include(api_router.urls)),
+    path("auth/", include("djoser.urls.authtoken")),
+    path("", include("djoser.urls")),
 ]
