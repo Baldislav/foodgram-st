@@ -9,3 +9,6 @@ ERROR_MESSAGES = {
     "image_empty": "Изображение не может быть пустым.",
     "auth_required": "Authentication credentials were not provided.",
 }
+
+MAX_NAME_LENGTH = 150
+MIN_INGREDIENT_AMOUNT = 1

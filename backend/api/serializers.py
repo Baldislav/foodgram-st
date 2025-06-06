@@ -7,15 +7,15 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from rest_framework.exceptions import NotAuthenticated
 
-from .constants import ERROR_MESSAGES
+from .constants import ERROR_MESSAGES, MAX_NAME_LENGTH, MIN_INGREDIENT_AMOUNT
 from recipes.models import Ingredient, Recipe, IngredientInRecipe
 
 UserModel = get_user_model()
 
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
-    first_name = serializers.CharField(required=True, max_length=150)
-    last_name = serializers.CharField(required=True, max_length=150)
+    first_name = serializers.CharField(required=True, max_length=MAX_NAME_LENGTH)
+    last_name = serializers.CharField(required=True, max_length=MAX_NAME_LENGTH)
 
     class Meta(DjoserUserCreateSerializer.Meta):
         model = UserModel
@@ -73,7 +73,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 class IngredientAmountSerializer(serializers.Serializer):
     id = serializers.PrimaryKeyRelatedField(queryset=Ingredient.objects.all())
     amount = serializers.IntegerField(
-        min_value=1,
+        min_value=MIN_INGREDIENT_AMOUNT,
         error_messages={
             "min_value": ERROR_MESSAGES["ingredient_min_value"]
         },
