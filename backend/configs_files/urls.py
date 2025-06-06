@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 
-from api.views import recipe_short_redirect_view
+from recipes.views import recipe_short_redirect_view
 
 urlpatterns = [
     path("admin/", admin.site.urls),

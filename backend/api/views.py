@@ -36,12 +36,6 @@ from .serializers import (
 User = get_user_model()
 
 
-@api_view(["GET"])
-def recipe_short_redirect_view(request, pk):
-    recipe = get_object_or_404(Recipe, pk=pk)
-    return redirect(f"/recipes/{recipe.pk}/")
-
-
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
