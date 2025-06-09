@@ -17,7 +17,8 @@ from .serializers import (
     AvatarResponseSerializer as SetAvatarResponseSerializer,
     AvatarUploadSerializer as SetAvatarSerializer,
     IngredientSerializer,
-    RecipeDetailSerializer,
+    RecipeReadSerializer,
+    RecipeCreateUpdateSerializer,
     RecipeShortSerializer,
     UserWithRecipesSerializer,
 )
@@ -55,10 +56,32 @@ class RecipeViewSet(viewsets.ModelViewSet):
         "in_shopping_carts_of",
         )
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        read_serializer = RecipeReadSerializer(serializer.instance, context=self.get_serializer_context())
+        return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+    
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        read_serializer = RecipeReadSerializer(serializer.instance, context=self.get_serializer_context())
+        return Response(read_serializer.data, status=status.HTTP_200_OK)
+
     def get_serializer_class(self):
+        if self.action in ['list', 'retrieve']:
+            return RecipeReadSerializer
+        if self.action in ['create', 'update', 'partial_update']:
+            return RecipeCreateUpdateSerializer
         if self.action in ['favorite', 'shopping_cart']:
             return RecipeShortSerializer
-        return RecipeDetailSerializer
+        return RecipeReadSerializer
+
+
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
